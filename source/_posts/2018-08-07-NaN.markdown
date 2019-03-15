@@ -1,0 +1,110 @@
+---
+layout:     post
+title:      "JS 中的 NaN"
+date:       2018-08-07
+author:     "Vincent"
+catalog:    true
+tags:
+    - 前端开发
+    - JavaScript
+---
+
+> NaN 相关的问题应该属于是 JS 的一些缺陷性的知识，但我还是觉得花几分钟搞清楚好一点。
+
+### NaN值的产生
+
+当算术运算返回一个未定义的或无法表示的值时，NaN就产生了。但是，NaN并不一定用于表示某些值超出表示范围的情况。将某些不能强制转换为数值的非数值转换为数值的时候，也会得到NaN。
+
+例如，0 除以0会返回NaN —— 但是其他数除以0则不会返回NaN。
+
+### NaN 和 Number.NaN
+
+- NaN 是一个全局对象的属性，类型为`'string'`；
+- 跟 NaN 相似，Number.NaN 是 Number 的一个静态属性，不必创建一个 Number 实例来访问该属性，可以直接使用 Number.NaN 来访问该静态属性；
+- 在现代浏览器中（ES5中）， NaN 属性是一个不可配置（non-configurable），不可写（non-writable）的属性。但在ES3中，这个属性的值是可以被更改的，但是也应该避免覆盖；
+- NaN 不等于任何值包括它自身，因此等号运算符（`==` 和 `===`）不能被用来判断一个值是否是 NaN。必须使用`Number.isNaN()`或`isNaN()`函数。
+
+### isNaN() 和 Number.isNaN()
+
+- isNaN() 是 JS 的一个内置函数；
+- Number.isNaN() 是 ES6 中定义的；
+- isNaN() 在参数不是 Number 类型时会首先尝试将这个参数转换为数值，Number.isNaN() 不会。
+
+#### isNaN() 的怪异行为
+
+由于 **isNaN() 在参数不是 Number 类型时会首先尝试将这个参数转换为数值**，因此，对于能被强制转换为有效的非NaN数值来说（空字符串和布尔值分别会被强制转换为数值 0 和 1），返回 false 值也许会让人感觉莫名其妙。比如说，空字符串就明显“不是数值（not a number）”。
+
+示例：
+
+```js
+isNaN(NaN);       // true
+isNaN(undefined); // true
+isNaN({});        // true
+
+isNaN(true);      // false
+isNaN(null);      // false
+isNaN(37);        // false
+
+// strings
+isNaN("37");      // false: 可以被转换成数值37
+isNaN("37.37");   // false: 可以被转换成数值37.37
+isNaN("37,5");    // true
+isNaN('123ABC');  // true:  parseInt("123ABC")的结果是 123, 但是Number("123ABC")结果是 NaN
+isNaN("");        // false: 空字符串被转换成0
+isNaN(" ");       // false: 包含空格的字符串被转换成0
+
+// dates
+isNaN(new Date());                // false
+isNaN(new Date().toString());     // true
+
+isNaN("blabla")   // true: "blabla"不能转换成数值
+                  // 转换成数值失败， 返回NaN
+```
+
+而 Number.isNaN() 不会：
+
+```js
+Number.isNaN(NaN);        // true
+Number.isNaN(Number.NaN); // true
+Number.isNaN(0 / 0)       // true
+
+// 下面这几个如果使用全局的 isNaN() 时，会返回 true。
+Number.isNaN("NaN");      // false，字符串 "NaN" 不会被隐式转换成数字 NaN。
+Number.isNaN(undefined);  // false
+Number.isNaN({});         // false
+Number.isNaN("blabla");   // false
+
+// 下面的都返回 false
+Number.isNaN(true);
+Number.isNaN(null);
+Number.isNaN(37);
+Number.isNaN("37");
+Number.isNaN("37.37");
+Number.isNaN("");
+Number.isNaN(" ");
+```
+
+#### 对 isNaN 的 polyfill
+
+```js
+Number.isNaN = Number.isNaN || function(value) {
+    return typeof value === "number" && isNaN(value)
+}
+```
+
+这种是加多一个 typeof 的判断
+
+```js
+Number.isNaN = Number.isNaN || function(value) {
+    var n = parseInt(value)
+    return n !== value
+}
+```
+
+这种是先对参数 parseInt 再判断 parseInt 前后有无变化，对于非 number 类型肯定有变化所以返回 false，而 NaN 不等于自身也会返回 false。
+
+> 参考：
+> [NaN - JavaScript | MDN](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/NaN)
+> [Number.NaN - JavaScript | MDN](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Number/NaN)
+> [isNaN - JavaScript | MDN](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/isNaN)
+> [Number.isNaN - JavaScript | MDN](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Number/isNaN)

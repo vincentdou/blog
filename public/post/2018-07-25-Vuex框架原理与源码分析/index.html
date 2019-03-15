@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<title>[转]Vuex框架原理与源码分析 - Vincent Blog</title>
+<base href="/blog/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<link rel="canonical" href="https://vincentdou.github.io/blog/post/2018-07-25-Vuex框架原理与源码分析/">
+<link rel="icon" type="image/x-icon" href="/blog/favicon.ico">
+<link rel="manifest" href="/blog/manifest.json">
+<meta name="theme-color" content="#2a2b33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="translucent">
+<meta name="description" content="原文：Vuex 框架原理与源码分析  Vuex 是一个专为 Vue 服务，用于管理页面数据状态、提供统一数据操作的生态系统。它集中于 MVC 模式中的 Model 层，规定所有的数据操作必须通过 action–mutation–state change 的流程来进行，再结合 Vue 的数据视图双向绑定特性来实现页面的展示更新。统一的页面状态管理以及操作处理，可以让复杂的组件交互变得简单清晰，同时">
+<meta name="keywords" content="前端开发,vue">
+<meta property="og:type" content="website">
+<meta property="og:title" content="[转]Vuex框架原理与源码分析">
+<meta property="og:url" content="https://vincentdou.github.io/blog/post/2018-07-25-Vuex框架原理与源码分析/index.html">
+<meta property="og:site_name" content="Vincent Blog">
+<meta property="og:description" content="原文：Vuex 框架原理与源码分析  Vuex 是一个专为 Vue 服务，用于管理页面数据状态、提供统一数据操作的生态系统。它集中于 MVC 模式中的 Model 层，规定所有的数据操作必须通过 action–mutation–state change 的流程来进行，再结合 Vue 的数据视图双向绑定特性来实现页面的展示更新。统一的页面状态管理以及操作处理，可以让复杂的组件交互变得简单清晰，同时">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b4bb55247?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b4bb88ab4?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b4ba6e4a5?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b4bc0c0a0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b774c3c40?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b78b2b58f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b79f8a6e3?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:updated_time" content="2019-01-02T08:49:00.261Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[转]Vuex框架原理与源码分析">
+<meta name="twitter:description" content="原文：Vuex 框架原理与源码分析  Vuex 是一个专为 Vue 服务，用于管理页面数据状态、提供统一数据操作的生态系统。它集中于 MVC 模式中的 Model 层，规定所有的数据操作必须通过 action–mutation–state change 的流程来进行，再结合 Vue 的数据视图双向绑定特性来实现页面的展示更新。统一的页面状态管理以及操作处理，可以让复杂的组件交互变得简单清晰，同时">
+<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2018/5/12/1635035b4bb55247?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<link rel="stylesheet" href="/blog/theme.e96ad1ccc3b417cdeef8.css">
+<link rel="stylesheet" href="/blog/styles.f1355657b35fb30107f6.css">
+<script src="/blog/config.214a7ea9b456e2830795.js"></script>
+</head>
+<body>
+<is-root></is-root>
+<script src="/blog/runtime.a66f828dca56eeb90e02.js"></script>
+<script src="/blog/polyfills.8f67e44aa389442fc98e.js"></script>
+<script src="/blog/main.b720477a2284d89cdc4d.zh-Hans.js"></script></body>
+</html>

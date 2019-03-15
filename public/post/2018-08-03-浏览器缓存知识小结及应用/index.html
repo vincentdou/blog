@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<title>浏览器缓存知识小结及应用 - Vincent Blog</title>
+<base href="/blog/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<link rel="canonical" href="https://vincentdou.github.io/blog/post/2018-08-03-浏览器缓存知识小结及应用/">
+<link rel="icon" type="image/x-icon" href="/blog/favicon.ico">
+<link rel="manifest" href="/blog/manifest.json">
+<meta name="theme-color" content="#2a2b33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="translucent">
+<meta name="description" content="浏览器缓存基本认识它分为强缓存和协商缓存：   浏览器在加载资源时，先根据这个资源的一些 http header 判断它是否命中强缓存，强缓存如果命中，浏览器直接从自己的缓存中读取资源，不会发请求到服务器；  当强缓存没有命中的时候，浏览器一定会发送一个请求到服务器，通过服务器端依据资源的另外一些 http header 验证这个资源是否命中协商缓存，如果协商缓存命中，服务器会将这个请求返回，但是">
+<meta name="keywords" content="前端开发,缓存">
+<meta property="og:type" content="website">
+<meta property="og:title" content="浏览器缓存知识小结及应用">
+<meta property="og:url" content="https://vincentdou.github.io/blog/post/2018-08-03-浏览器缓存知识小结及应用/index.html">
+<meta property="og:site_name" content="Vincent Blog">
+<meta property="og:description" content="浏览器缓存基本认识它分为强缓存和协商缓存：   浏览器在加载资源时，先根据这个资源的一些 http header 判断它是否命中强缓存，强缓存如果命中，浏览器直接从自己的缓存中读取资源，不会发请求到服务器；  当强缓存没有命中的时候，浏览器一定会发送一个请求到服务器，通过服务器端依据资源的另外一些 http header 验证这个资源是否命中协商缓存，如果协商缓存命中，服务器会将这个请求返回，但是">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160113231739069-2137551345.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160114150736335-1224902285.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160114213430210-470510830.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160115111445678-1475052015.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160115125438397-853706841.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160115111453741-1776179122.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160115112631897-451862486.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160115112640007-97304290.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160115125439444-1024808154.png">
+<meta property="og:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160115125440382-1079455302.png">
+<meta property="og:updated_time" content="2019-01-02T08:49:00.227Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="浏览器缓存知识小结及应用">
+<meta name="twitter:description" content="浏览器缓存基本认识它分为强缓存和协商缓存：   浏览器在加载资源时，先根据这个资源的一些 http header 判断它是否命中强缓存，强缓存如果命中，浏览器直接从自己的缓存中读取资源，不会发请求到服务器；  当强缓存没有命中的时候，浏览器一定会发送一个请求到服务器，通过服务器端依据资源的另外一些 http header 验证这个资源是否命中协商缓存，如果协商缓存命中，服务器会将这个请求返回，但是">
+<meta name="twitter:image" content="https://images2015.cnblogs.com/blog/459873/201601/459873-20160113231739069-2137551345.png">
+<link rel="stylesheet" href="/blog/theme.e96ad1ccc3b417cdeef8.css">
+<link rel="stylesheet" href="/blog/styles.f1355657b35fb30107f6.css">
+<script src="/blog/config.214a7ea9b456e2830795.js"></script>
+</head>
+<body>
+<is-root></is-root>
+<script src="/blog/runtime.a66f828dca56eeb90e02.js"></script>
+<script src="/blog/polyfills.8f67e44aa389442fc98e.js"></script>
+<script src="/blog/main.b720477a2284d89cdc4d.zh-Hans.js"></script></body>
+</html>

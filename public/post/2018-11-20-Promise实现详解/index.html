@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<title>[转]写一个符合 Promises/A+ 规范并可配合 ES7 async/await 使用的 Promise - Vincent Blog</title>
+<base href="/blog/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<link rel="canonical" href="https://vincentdou.github.io/blog/post/2018-11-20-Promise实现详解/">
+<link rel="icon" type="image/x-icon" href="/blog/favicon.ico">
+<link rel="manifest" href="/blog/manifest.json">
+<meta name="theme-color" content="#2a2b33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="translucent">
+<meta name="description" content="Promise 只是一个 Event Loop 中的 microtask深入了解过 Promise 的人都知道，Promise 所说的异步执行，只是将 Promise 构造函数中 resolve，reject 方法和注册的 callback 转化为 eventLoop的 microtask/Promise Job，并放到 Event Loop 队列中等待执行，也就是 Javascript 单线程中">
+<meta name="keywords" content="前端开发,JavaScript,ES6,Promise">
+<meta property="og:type" content="website">
+<meta property="og:title" content="[转]写一个符合 Promises&#x2F;A+ 规范并可配合 ES7 async&#x2F;await 使用的 Promise">
+<meta property="og:url" content="https://vincentdou.github.io/blog/post/2018-11-20-Promise实现详解/index.html">
+<meta property="og:site_name" content="Vincent Blog">
+<meta property="og:description" content="Promise 只是一个 Event Loop 中的 microtask深入了解过 Promise 的人都知道，Promise 所说的异步执行，只是将 Promise 构造函数中 resolve，reject 方法和注册的 callback 转化为 eventLoop的 microtask/Promise Job，并放到 Event Loop 队列中等待执行，也就是 Javascript 单线程中">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-02T08:49:00.261Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="[转]写一个符合 Promises&#x2F;A+ 规范并可配合 ES7 async&#x2F;await 使用的 Promise">
+<meta name="twitter:description" content="Promise 只是一个 Event Loop 中的 microtask深入了解过 Promise 的人都知道，Promise 所说的异步执行，只是将 Promise 构造函数中 resolve，reject 方法和注册的 callback 转化为 eventLoop的 microtask/Promise Job，并放到 Event Loop 队列中等待执行，也就是 Javascript 单线程中">
+<link rel="stylesheet" href="/blog/theme.e96ad1ccc3b417cdeef8.css">
+<link rel="stylesheet" href="/blog/styles.f1355657b35fb30107f6.css">
+<script src="/blog/config.214a7ea9b456e2830795.js"></script>
+</head>
+<body>
+<is-root></is-root>
+<script src="/blog/runtime.a66f828dca56eeb90e02.js"></script>
+<script src="/blog/polyfills.8f67e44aa389442fc98e.js"></script>
+<script src="/blog/main.b720477a2284d89cdc4d.zh-Hans.js"></script></body>
+</html>

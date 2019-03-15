@@ -1,0 +1,210 @@
+---
+layout:     post
+title:      "JS 中的深浅拷贝"
+date:       2018-08-06
+author:     "Vincent"
+catalog:    true
+tags:
+    - 前端开发
+    - JavaScript
+---
+
+## 前言
+
+JavaScript 变量可能包含两种不同数据类型的值：基本类型值和引用类型值。基本类型值指的是那些保存在栈内存中的简单数据段，即这种值完全保存在内存中的一个位置。而引用类型值是指那些保存堆内存中的对象，意思是变量中保存的实际上只是一个指针，这个指针指向内存中的另一个位置，该位置保存对象。
+
+目前基本类型有：Boolean、Null、Undefined、Number、String、Symbol，引用类型有：Object、Array、Function。
+
+对于引用类型，简单的`=`赋值只是调一下指针，如果给两个变量赋值同一个对象，那么两者的值会是同一个引用，其中一方改变，另一方也会相应改变。
+
+通常在开发中我们不希望出现这样的问题，这就牵涉到深浅拷贝。
+
+## 浅拷贝
+
+- Array.slice()、Array.concat()、Array.from()、展开运算符（…）能实现数组的浅拷贝；
+- Object.assign()、展开运算符```…```能实现对象的浅拷贝。
+
+> 浅拷贝只解决第一层的问题，如果接下去的值中还有对象的话，就要用到深拷贝。
+
+## 深拷贝
+
+通常有下面两种方法实现深拷贝：
+
+- 序列化反序列化法
+- MessageChannel 法
+- 迭代递归法
+
+都会用到的一个函数：
+
+```js
+// 判断是否为对象
+function isObject(o) {
+    return (typeof o === 'object' || typeof o === 'function') && o !== null)
+}
+```
+
+### 序列化反序列化法
+
+先把代码序列化成数据，再反序列化回对象：
+
+```js
+// 序列化反序列化法
+function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj))
+}
+```
+
+局限性：
+
+- 无法实现对函数、RegExp等特殊对象的克隆
+- 循环引用会造成栈溢出
+- 原形链上的属性也不会被追踪以及复制
+
+在通常情况下，复杂数据都是可以序列化的，所以这个函数可以解决大部分问题，并且该函数是内置函数中处理深拷贝性能最快的。所以如果你的数据中不含有以下三种情况，这个方法是很好的：
+
+- 有 undefined
+- 有函数、RegExp等特殊对象
+- 有循环引用的对象
+
+### MessageChannel 法
+
+MessageChannel 接口是信道通信 API 的一个接口，它允许我们创建一个新的信道并通过信道的两个 MessagePort 属性来传递数据。简单来说，MessageChannel 创建了一个通信的管道，这个管道有两个口子，每个口子都可以通过 postMessage 发送数据，而一个口子只要绑定了 onmessage 回调方法，就可以接收从另一个口子传过来的数据。
+
+我们可用利用他这个两个口子完成克隆：
+
+```js
+function structuralClone(obj) {
+  return new Promise(resolve => {
+    const {port1, port2} = new MessageChannel()
+    port2.onmessage = ev => resolve(ev.data)
+    port1.postMessage(obj)
+  })
+}
+
+var obj = {a: 1, b: {
+    c: b
+}}
+// 注意该方法是异步的
+// 可以处理 undefined 和循环引用对象
+const clone = await structuralClone(obj)
+```
+
+局限性：
+
+- 数据中包含函数、Error时会报错
+- 循环引用会造成栈溢出
+
+这个方法能很好的保留 RegExp、Error 这些的构造函数。
+
+### 迭代递归法
+
+这是最常规的方法，思想很简单：就是对对象进行迭代操作，对它的每个值进行递归深拷贝。
+
+#### for...in 法
+
+```js
+// 迭代递归法：深拷贝对象与数组
+function deepClone(obj) {
+    if (!isObject(obj)) {
+        throw new Error('obj 不是一个对象！')
+    }
+
+    let isArray = Array.isArray(obj)
+    let cloneObj = isArray ? [] : {}
+    for (let key in obj) {
+        cloneObj[key] = isObject(obj[key]) ? deepClone(obj[key]) : obj[key]
+    }
+
+    return cloneObj
+}
+```
+
+局限性：
+
+- 无法实现对函数 、Date、RegExp、Error等有特殊的构造函数的对象的克隆
+- 循环引用会造成栈溢出
+
+for...in 会追踪原型链上的属性，而其它三种方法(Object.keys、Reflect.ownKeys 和 JSON 方法)都不会追踪原型链上的属性。
+
+#### Reflect 法
+
+```js
+// 代理法
+function deepClone(obj) {
+    if (!isObject(obj)) {
+        throw new Error('obj 不是一个对象！')
+    }
+
+    let isArray = Array.isArray(obj)
+    let cloneObj = isArray ? [...obj] : { ...obj }
+    Reflect.ownKeys(cloneObj).forEach(key => {
+        cloneObj[key] = isObject(obj[key]) ? deepClone(obj[key]) : obj[key]
+    })
+
+    return cloneObj
+}
+```
+
+局限性：
+
+- 无法实现对函数 、Date、RegExp、Error等有特殊的构造函数的对象的克隆
+- 循环引用会造成栈溢出
+- 原形链上的属性也不会被追踪以及复制
+
+#### lodash 中的深拷贝
+
+著名的 lodash 中的 cloneDeep 方法同样是使用迭代递归法实现的，它支持的对象种类更多，具体的实现过程读者可以参考 [lodash 的 baseClone](https://github.com/lodash/lodash/blob/master/.internal/baseClone.js) 方法。
+
+局限：
+
+- 不会对 Error 和 Function 类型进行拷贝
+
+### 思考
+
+#### 对象成环怎么办？
+
+我们给 test 加一个 loopObj 键，值指向自身：
+
+```
+test.loopObj = test
+```
+
+这时我们使用迭代递归法中的 for..in 实现和 Reflect 实现还有序列化反序列化法都会栈溢出，但 lodash 却可以得到正确结果。
+
+为什么呢？我们去 [lodash 源码](https://github.com/lodash/lodash/blob/master/.internal/baseClone.js#L200)看看：
+
+![](https://user-gold-cdn.xitu.io/2018/4/18/162d6bbd8d654360?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+因为 lodash 使用的是栈把对象存储起来了，如果有环对象，就会从栈里检测到，从而直接返回结果，悬崖勒马。
+
+当然，设置一个哈希表存储已拷贝过的对象同样可以达到同样的目的：
+
+```js
+function deepClone(obj, hash = new WeakMap()) {
+    if (!isObject(obj)) {
+        return obj
+    }
+    // 查表
+    if (hash.has(obj)) return hash.get(obj)
+
+    let isArray = Array.isArray(obj)
+    let cloneObj = isArray ? [] : {}
+    // 哈希表设值
+    hash.set(obj, cloneObj)
+
+    let result = Object.keys(obj).map(key => {
+        return {
+            [key]: deepClone(obj[key], hash)
+        }
+    })
+    return Object.assign(cloneObj, ...result)
+}
+```
+
+这里我们使用 WeakMap 作为哈希表，因为它的键是弱引用的，而我们这个场景里键恰好是对象，需要弱引用。
+
+> 参考：
+[面试官:请你实现一个深克隆](https://juejin.im/post/5abb55ee6fb9a028e33b7e0a?utm_medium=fe&utm_source=weixinqun)
+[低门槛彻底理解JavaScript中的深拷贝和浅拷贝](https://juejin.im/post/5ad5b908f265da23870f540d?utm_medium=fe&utm_source=weixinqun)
+[深入深入再深入 js 深拷贝对象](https://juejin.im/post/5ad6b72f6fb9a028d375ecf6?utm_medium=fe&utm_source=weixinqun)
+[前端面试图谱-深浅拷贝](https://yuchengkai.cn/docs/zh/frontend/#%E6%B7%B1%E6%B5%85%E6%8B%B7%E8%B4%9D)

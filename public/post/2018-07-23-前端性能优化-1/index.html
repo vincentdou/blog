@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<title>前端性能优化-1 - Vincent Blog</title>
+<base href="/blog/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<link rel="canonical" href="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-1/">
+<link rel="icon" type="image/x-icon" href="/blog/favicon.ico">
+<link rel="manifest" href="/blog/manifest.json">
+<meta name="theme-color" content="#2a2b33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="translucent">
+<meta name="description" content="DOM 操作篇缓存DOM对象很基本的一个做法，在 for 循环前把要操作的 DOM 节点先获取到，而不是每次遍历都重新获取。 在内存中操作元素利用document.createDocumentFragment()可以创建内存节点。 由于 DOM 操作会导致浏览器的回流，回流需要花费大量的时间进行样式计算和节点重绘与渲染，所以应当尽量减少回流次数。一种可靠的方法就是加入元素时不要修改页面上已经存在的">
+<meta name="keywords" content="前端开发,性能优化">
+<meta property="og:type" content="website">
+<meta property="og:title" content="前端性能优化-1">
+<meta property="og:url" content="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-1/index.html">
+<meta property="og:site_name" content="Vincent Blog">
+<meta property="og:description" content="DOM 操作篇缓存DOM对象很基本的一个做法，在 for 循环前把要操作的 DOM 节点先获取到，而不是每次遍历都重新获取。 在内存中操作元素利用document.createDocumentFragment()可以创建内存节点。 由于 DOM 操作会导致浏览器的回流，回流需要花费大量的时间进行样式计算和节点重绘与渲染，所以应当尽量减少回流次数。一种可靠的方法就是加入元素时不要修改页面上已经存在的">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-02T08:49:00.221Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="前端性能优化-1">
+<meta name="twitter:description" content="DOM 操作篇缓存DOM对象很基本的一个做法，在 for 循环前把要操作的 DOM 节点先获取到，而不是每次遍历都重新获取。 在内存中操作元素利用document.createDocumentFragment()可以创建内存节点。 由于 DOM 操作会导致浏览器的回流，回流需要花费大量的时间进行样式计算和节点重绘与渲染，所以应当尽量减少回流次数。一种可靠的方法就是加入元素时不要修改页面上已经存在的">
+<link rel="stylesheet" href="/blog/theme.e96ad1ccc3b417cdeef8.css">
+<link rel="stylesheet" href="/blog/styles.f1355657b35fb30107f6.css">
+<script src="/blog/config.214a7ea9b456e2830795.js"></script>
+</head>
+<body>
+<is-root></is-root>
+<script src="/blog/runtime.a66f828dca56eeb90e02.js"></script>
+<script src="/blog/polyfills.8f67e44aa389442fc98e.js"></script>
+<script src="/blog/main.b720477a2284d89cdc4d.zh-Hans.js"></script></body>
+</html>

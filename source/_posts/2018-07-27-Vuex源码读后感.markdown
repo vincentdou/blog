@@ -1,0 +1,199 @@
+---
+layout:     post
+title:      "Vuex源码读后感"
+date:       2018-07-27
+author:     "Vincent"
+catalog:    true
+tags:
+    - 前端开发
+    - vue
+---
+
+> 这是一篇感想，不是 vuex 源码的导读。除了总结几个对 Vuex 的疑问，还有一些阅读源码的方法论可以分享。
+
+## 推荐两篇文章
+
+推荐两篇导读的文章：
+
+1. [Vuex 框架原理与源码分析](https://juejin.im/entry/5af5d048f265da0b7b35f94e)
+
+    > 美团前端团队的一篇文章，这篇文章是提出问题、解决问题的叙事风格，比较容易看的进去。
+
+2. [Vuex 2.0 源码分析](https://github.com/DDFE/DDFE-blog/issues/8)
+   
+    > 相对来说，这篇文章像是记叙文的风格，从暴露出的 API 开始进行接近逐行的分析，十分详细。
+
+## Q&A
+
+> 阅读源码前的几个疑惑，在阅读后得到了答案。
+
+### 1. `Vue.use(Vuex)`发生了什么？
+
+`Vue.use()`是 Vue 安装插件的方法，先看下它的代码：
+
+```js
+function (plugin: Function | Object) {
+  /* istanbul ignore if */
+  if (plugin.installed) {
+    return
+  }
+  // additional parameters
+  const args = toArray(arguments, 1)
+  args.unshift(this)
+  if (typeof plugin.install === 'function') {
+    // 实际执行插件的 install 方法
+    plugin.install.apply(plugin, args)
+  } else {
+    plugin.apply(null, args)
+  }
+  plugin.installed = true
+  return this
+}
+```
+
+这里核心就是执行`plugin.install.apply(plugin, args)`，所以下一步看 Vuex 的 install 方法：
+
+```js
+function install (_Vue) {
+  if (Vue && _Vue === Vue) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(
+        '[vuex] already installed. Vue.use(Vuex) should be called only once.'
+      )
+    }
+    return
+  }
+  Vue = _Vue
+  applyMixin(Vue)
+}
+```
+
+再看 applyMixin：
+
+```js
+function (Vue) {
+  const version = Number(Vue.version.split('.')[0])
+
+  if (version >= 2) {
+    const usesInit = Vue.config._lifecycleHooks.indexOf('init') > -1
+    Vue.mixin(usesInit ? { init: vuexInit } : { beforeCreate: vuexInit })
+  } else {
+    // override init and inject vuex init procedure
+    // for 1.x backwards compatibility.
+    const _init = Vue.prototype._init
+    Vue.prototype._init = function (options = {}) {
+      options.init = options.init
+        ? [vuexInit].concat(options.init)
+        : vuexInit
+      _init.call(this, options)
+    }
+  }
+}
+```
+
+所以 Vuex 的 install 方法的核心就是在每个 Vue 组件初始化的时候执行 `vuexInit`，Vue 版本如果在 2.0 以上是在 init 或 beforeCreate 生命周期上，2.0 以下版本是修改 Vue 对象原型的_init方法。
+
+### 2. Vuex 是怎么做到在每个 vue 文件中都能访问到的？
+
+看下 vuexInit 方法：
+
+```js
+function vuexInit () {
+  const options = this.$options
+  // store injection
+  if (options.store) {
+    this.$store = options.store
+  } else if (options.parent && options.parent.$store) {
+    this.$store = options.parent.$store
+  }
+}
+```
+
+这个函数将初始化 Vue 根组件时传入的 store 设置到 this 对象的`$store`属性上，子组件从其父组件引用`$store`属性，层层嵌套进行设置。这样，在任意组件中执行`this.$store`都能找到装载的那个 store 对象。这里的 this 指向一个 Vue 组件。
+
+### 3. strict 模式下不能直接修改 state，怎么做到的？
+
+在 resetStoreVM 方法中如果是严格模式会执行`enableStrictMode(store)`，看下这个函数：
+
+```js
+function enableStrictMode (store) {
+  store._vm.$watch(function () { return this._data.$$state }, () => {
+    if (process.env.NODE_ENV !== 'production') {
+      assert(store._committing, `do not mutate vuex store state outside mutation handlers.`)
+    }
+  }, { deep: true, sync: true })
+}
+```
+
+很短的一段代码，主要就是利用 Vue 的 watch 监测 state 的变化，用到断言函数，在 _committing 为`false`的时候进行报错。我们通过 mutation 修改 state 的时候都会经过 _withCommit：
+
+```js
+_withCommit (fn) {
+  const committing = this._committing
+  this._committing = true
+  fn()
+  this._committing = committing
+}
+```
+
+这就是通过 mutation 修改 state 不会报错的原因。
+
+### 4. _vm 的主要意义是什么？
+
+_vm 是一个 Vue 组件，它的作用除了上面的 watch 以外，还有：
+
+- 把 state 存在`_vm`的`_data`的`$$state`属性上，并且让 store 的 state 指向这里。
+- 把 getter 存在`_vm`的`computed`上。
+
+## 启发
+
+### 1. `assert`断言函数
+
+assert函数是一个简单的断言函数的实现，一行代码即可实现。
+
+```js
+function assert (condition, msg) {
+  if (!condition) throw new Error(`[vuex] ${msg}`)
+}
+```
+
+用在条件的检测或者表单的校验上还是很方便的。
+
+### 2. `deepCopy`深拷贝
+
+```js
+function deepCopy (obj, cache = []) {
+  // just return if obj is immutable value
+  if (obj === null || typeof obj !== 'object') {
+    return obj
+  }
+
+  // if obj is hit, it is in circular structure
+  const hit = find(cache, c => c.original === obj)
+  if (hit) {
+    return hit.copy
+  }
+
+  const copy = Array.isArray(obj) ? [] : {}
+  // put the copy into cache at first
+  // because we want to refer it in recursive deepCopy
+  cache.push({
+    original: obj,
+    copy
+  })
+
+  Object.keys(obj).forEach(key => {
+    copy[key] = deepCopy(obj[key], cache)
+  })
+
+  return copy
+}
+```
+
+这里的 deepCopy 也是采用构造一个新的对象，遍历原对象或者数组，递归调用自身的方式。不过这里的实现有一个有意思的地方，在每次执行 deepCopy 的时候，会用 cache 数组缓存当前嵌套的对象，以及执行 deepCopy 返回的 copy。如果在 deepCopy 的过程中通过`find(cache, c => c.original === obj)`发现有循环引用的时候，直接返回 cache 中对应的 copy，这样就避免了无限循环的情况。
+
+### 3. 阅读源码的方法
+
+一开始图省事，安装了一个叫 octotree 的 chrome 扩展，发现其实很麻烦，最好还是把源码 clone 下来用编辑器打开。另外把实例在控制台 console 出来也是很高效的一个做法。
+
+所以我在看代码的时候开了三个编辑器：看源码、打开一个用到 Vuex 的项目、写 markdown。切来切去有点懵的。

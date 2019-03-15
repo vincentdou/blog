@@ -1,0 +1,339 @@
+---
+layout:     post
+title:      "你不知道的JS-this与对象原型-this"
+date:       2018-05-25
+author:     "Vincent"
+catalog:    true
+tags:
+    - 前端开发
+    - JavaScript
+    - 你不知道的JS
+---
+
+## this是什么？
+
+- 函数内部的`this`并不是指向函数自己；
+- `this`不会以任何方式指向函数的词法作用域；
+- `this`不是编写时绑定，而是运行时绑定。它依赖于函数调用的上下文条件。`this`绑定与函数声明的位置没有任何关系，而与函数被调用的方式紧密相连。
+
+当一个函数被调用时，会建立 **活动记录** （有时也称为执行上下文）。这个记录包含函数是从何处（调用栈 —— call-stack）被调用的，函数是如何被调用的，被传递了什么参数等信息。这个记录的属性之一，就是在函数执行期间将被使用的`this`引用。
+
+## this全面解析
+
+### 调用点（Call-site）
+
+寻找调用点就是寻找函数被调用的位置，最重要的是分析调用栈，调用点就在当前执行中的函数的前一个调用中。
+
+> 调用栈: 使我们到达当前执行位置而被调用的所有方法的堆栈
+
+```js
+function baz() {
+	// 调用栈是: `baz`
+	// 我们的调用点是 global scope（全局作用域）
+
+	console.log( "baz" );
+	bar(); // <-- `bar` 的调用点
+}
+
+function bar() {
+	// 调用栈是: `baz` -> `bar`
+	// 我们的调用点位于 `baz`
+
+	console.log( "bar" );
+	foo(); // <-- `foo` 的 call-site
+}
+
+function foo() {
+  // 调用栈是: `baz` -> `bar` -> `foo`
+  // 我们的调用点位于 `bar`
+
+  console.log( "foo" );
+}
+
+baz(); // <-- `baz` 的调用点
+```
+
+### 绑定规则
+
+#### 默认绑定（Default Binding）
+
+当我们直接使用不带任何修饰的函数引用进行调用时，对应默认绑定。
+
+```js
+function foo() {
+  // 这里 this 指向全局对象
+  console.log( this.a );
+}
+
+var a = 2;
+
+foo(); // 2
+```
+
+strict 模式下对于默认绑定来说全局对象是不合法的，所以`this`将被设置为`undefined`。
+
+```js
+function foo() {
+  "use strict";
+
+  console.log( this.a );
+}
+
+var a = 2;
+
+foo(); // TypeError: `this` is `undefined`
+```
+
+注意：this的绑定规则基于调用点，但判断是否在 strict 模式则是取决于函数体。
+
+```js
+function foo() {
+  // 这里不是严格模式
+  console.log( this.a );
+}
+
+var a = 2;
+
+(function(){
+  "use strict";
+
+  foo(); // 2
+})();
+```
+
+#### 隐式绑定（Implicit Binding）
+
+另一种要考虑的规则是：调用点是否有上下文对象，或者说是否被某个对象拥有或者包含。
+
+```js
+function foo() {
+  console.log( this.a );
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+};
+
+obj.foo(); // 2
+
+// 这里函数 foo() 是先定义然后作为引用属性添加到 obj 中的，严格说函数 foo() 不属于 obj。
+// 然而调用栈会使用 obj 上下文来引用函数，因此可以说函数被调用的时候 obj “拥有”或“包含”它。
+```
+
+当函数引用有上下文对象时，隐式绑定规则会把函数调用中的`this`绑定到这个上下文对象。因此`this.a`和`obj.a`是一样的。
+
+> 对象属性引用链中只有最顶层或者说最后一层会影响调用位置
+
+**隐式丢失**
+
+```js
+function foo() {
+  console.log( this.a );
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+};
+
+var bar = obj.foo; // 函数引用！
+
+var a = "oops, global"; // `a` 也是一个全局对象的属性
+
+bar(); // "oops, global"
+```
+
+尽管`bar`似乎是`obj.foo`的引用，但实际上它只是另一个`foo`本身的引用而已。另外，起作用的调用点是`bar()`，一个直白，毫无修饰的调用，因此这里适用默认绑定。
+
+当我们传递一个回调函数时，参数传递其实就是一种隐式赋值，因此我们在传入参数时也会被隐式的引用赋值：
+
+```js
+function foo() {
+  console.log( this.a );
+}
+
+function doFoo(fn) {
+  // `fn` 只不过 `foo` 的另一个引用
+
+  fn(); // <-- 调用点!
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+};
+
+var a = "oops, global"; // `a` 也是一个全局对象的属性
+
+doFoo( obj.foo ); // "oops, global"
+```
+
+#### 显式绑定（Explicit Binding）
+
+JavaScript 中绝大多数内置的函数以及你创建的所有的函数，都可以访问`call(..)`和`apply(..)`。我们可以通过它来进行显式绑定。不过单独依靠明确绑定仍然不能解决函数“丢失”自己原本的`this`绑定的问题。
+
+**硬绑定（Hard Binding）**
+
+ES5 的内建工具提供`Function.prototype.bind`进行硬绑定：
+
+```js
+function foo(something) {
+  console.log( this.a, something );
+  return this.a + something;
+}
+
+var obj = {
+  a: 2
+};
+
+var bar = foo.bind( obj );
+
+var b = bar( 3 ); // 2 3
+console.log( b ); // 5
+```
+
+`bind(..)`返回一个硬编码的新函数，它使用你指定的`this`环境来调用原本的函数。
+
+它的思想来自这里：
+
+```js
+function foo(something) {
+  console.log( this.a, something );
+  return this.a + something;
+}
+
+// 简单的 `bind` 帮助函数
+function bind(fn, obj) {
+  return function() {
+    return fn.apply( obj, arguments );
+  };
+}
+
+var obj = {
+  a: 2
+};
+
+var bar = bind( foo, obj );
+
+var b = bar( 3 ); // 2 3
+console.log( b ); // 5
+```
+
+这里创建了一个函数，在它的内部手动调用`fn.apply(obj, arguments)`，由此强制`this`绑定到`obj`并调用`fn`。无论你过后怎样调用函数，它总是手动使用`obj`调用`foo`。
+
+#### new 绑定（new Binding）
+
+在 JavaScript 中，构造函数只是一些使用`new`操作符时被调用的函数。它们并不会属于某个类，也不会实例化一个类。实际上，它们甚至都不能说是一种特殊的函数类型，他们只是被`new`操作符调用的普通函数而已。
+
+可以说任何函数，都可以在前面加上`new`来被调用，这使函数调用成为一个构造器调用（constructor call）。这是一个重要而微妙的区别：实际上不存在“构造器函数”这样的东西，而只有函数的构造器调用。
+
+### 优先级
+
+判定`this`的顺序：
+
+1. 函数是通过`new`被调用的吗（new 绑定）？如果是，`this`就是新构建的对象。
+2. 函数是通过`call`或`apply`被调用（明确绑定），甚至是隐藏在`bind`硬绑定之中吗？如果是，`this`就是那个被明确指定的对象。
+3. 函数是通过环境对象（也称为拥有者或容器对象）被调用的吗（隐含绑定）？如果是，`this`就是那个环境对象。
+4. 否则，使用默认的`this`（默认绑定）。如果在 strict mode 下，就是`undefined`，否则是`global`对象。
+
+### 绑定的特例
+
+#### 被忽略的 this
+
+如果你传递`null`或`undefined`作为`call`、`apply`或`bind`的`this`绑定参数，那么这些值会被忽略掉，取而代之的是默认绑定规则将适用于这个调用。
+
+```js
+function foo() {
+  console.log( this.a );
+}
+
+var a = 2;
+
+foo.call( null ); // 2
+```
+
+进行`this`绑定的时候故意传`null`可以对参数进行柯里化：
+
+```js
+function foo(a,b) {
+  console.log( "a:" + a + ", b:" + b );
+}
+
+// 将数组散开作为参数
+foo.apply( null, [2, 3] ); // a:2, b:3
+
+// 用 `bind(..)` 进行柯里化
+var bar = foo.bind( null, 2 );
+bar( 3 ); // a:2, b:3
+```
+
+**更安全的this**
+
+对于那些确实使用了`this`引用的函数，默认绑定规则会把`this`绑定到全局对象（在浏览器中是 window）上，这将导致不可预计的后果（比如修改全局对象）。
+
+> DMZ（demilitarized zone，非军事区）对象：空的非委托的对象
+
+```js
+function foo(a,b) {
+  console.log( "a:" + a + ", b:" + b );
+}
+
+// 我们的 DMZ 空对象
+var ø = Object.create( null );
+
+// 将数组散开作为参数
+foo.apply( ø, [2, 3] ); // a:2, b:3
+
+// 用 `bind(..)` 进行 currying
+var bar = foo.bind( ø, 2 );
+bar( 3 ); // a:2, b:3
+```
+
+> `Object.create(null)`是创建完全为空的对象的最简单方法。`Object.create(null) `和`{}`很相似，但是没有指向`Object.prototype`的委托，所以它比`{}`“空得更彻底”。
+
+#### 间接
+
+对函数的“间接引用”适用默认绑定规则：
+
+```js
+function foo() {
+  console.log( this.a );
+}
+
+var a = 2;
+var o = { a: 3, foo: foo };
+var p = { a: 4 };
+
+o.foo(); // 3
+(p.foo = o.foo)(); // 2
+```
+
+赋值表达式`p.foo = o.foo`的返回值是目标函数的引用。所以调用点就是`foo()`而不是`p.foo()`或`o.foo()`。所以这里适用默认绑定。
+
+### 词法this
+
+ES6 引入的箭头函数不适用于这些规则，箭头函数从外层作用域来决定`this`绑定。
+
+```js
+function foo() {
+  // 返回一个箭头函数
+  return (a) => {
+    // this 遵从词法作用域继承自 foo()
+    console.log( this.a );
+  };
+}
+
+var obj1 = {
+  a: 2
+};
+
+var obj2 = {
+  a: 3
+};
+
+var bar = foo.call( obj1 );
+bar.call( obj2 ); // 2, 不是3!
+```
+
+> 箭头函数的绑定是无法被修改的（`new`也不行！）
