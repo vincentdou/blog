@@ -1,36 +1,47 @@
-const { pick, md5, getPagePath, escapeIdentifier } = require('../utils');
+const { pick, md5 } = require('../utils');
 
 module.exports = function (locals) {
   const site = this.config,
     theme = this.theme.config,
     config = Object.assign(
-      pick(site, ['title', 'subtitle', 'description', 'author']),
-      pick(theme, ['profile', 'menu', 'footer', 'comments', 'post', 'reward']),
+      pick(site, ['title', 'author']),
+      pick(theme, ['profile', 'menu', 'sns', 'footer', 'toc', 'comments', 'reward', 'plugins', 'data_prefix']),
       {
-        routes: locals.pages.map(page => getPagePath(page.source)).sort(),
         count: {
-          posts: locals.posts.filter(post => post.published).length,
-          categories: locals.categories.length,
-          tags: locals.tags.filter(tag => tag.posts.filter(post => post.published).length).length
+          posts: countOverflow(locals.posts.length),
+          categories: countOverflow(locals.categories.length),
+          tags: countOverflow(locals.tags.length)
         },
-        api: theme.theme.api_prefix,
-        color: theme.pwa.manifest ? theme.pwa.manifest.theme_color : '#2a2b33',
-        hash: theme.runtime.buildHash,
-        locale: this.theme.i18n.get()
+        color: theme.appearance.accent_color,
+        hash: theme.runtime.hash,
+        locale: this.theme.i18n.get(site.language)
       }
     );
 
-  if (config.count.categories) config.firstCategory = locals.categories.sort('name').data[0].name;
+  // page routes
+  if (locals.pages.length)
+    config.routes = locals.pages.map(page => page.link).sort();
 
-  if (theme.sns.email) theme.sns.email = 'mailto:' + theme.sns.email;
-  for (let key in theme.sns) {
-    if (theme.sns[key]) (config.sns || (config.sns = [])).push([escapeIdentifier(key), theme.sns[key]]);
+  if (config.count.categories) config.firstCategory = locals.categories[0].name;
+
+  // search
+  if (theme.search) {
+    const adapter = theme.search.adapter;
+    if (adapter.range) {
+      config.search = { local: true }
+      if (adapter.per_page) config.search.per_page = adapter.per_page
+    } else {
+      config.search = adapter
+    }
+    // Merge search.fab, search.page into adapter
+    if (theme.search.fab) config.search.fab = true;
+    if (theme.search.page) config.search.page = true;
   }
 
   let data = 'window.__inside__=' + JSON.stringify(config);
 
   if (theme.pwa.workbox)
-    data += `;navigator.serviceWorker && location.protocol === 'https:' && window.addEventListener('load', function() { navigator.serviceWorker.register('${theme.pwa.workbox.name}') })`
+    data += `\n;navigator.serviceWorker && location.protocol === 'https:' && window.addEventListener('load', function() { navigator.serviceWorker.register('${theme.pwa.workbox.name}') })`
 
   theme.runtime.configHash = md5(data);
 
@@ -39,3 +50,7 @@ module.exports = function (locals) {
     data
   }];
 };
+
+function countOverflow(count) {
+  return count > 999 ? '999+' : count;
+}

@@ -1,18 +1,47 @@
+const { flatten } = require('lodash');
+const { published } = require('../utils');
+const generators = [
+  require('./config'),
+  require('./theme'),
+  require('./entries'),
+  require('./sitemap'),
+  require('./manifest'),
+  require('./sw')
+];
+const builtInRoutes = ['page', 'post', 'categories', 'tags', 'archives', 'search', '404'];
+
 module.exports = function (hexo) {
-  // Overrides Hexo default generators
-  hexo.extend.generator.register('index', none);
-  hexo.extend.generator.register('post', none);
-  hexo.extend.generator.register('page', none);
-  hexo.extend.generator.register('archive', none);
-  hexo.extend.generator.register('category', none);
-  hexo.extend.generator.register('tag', none);
+  // Remove hexo default generators
+  ['index', 'post', 'page', 'archive', 'category', 'tag']
+    .forEach(name => delete hexo.extend.generator.store[name]);
 
-  hexo.extend.generator.register('is-config', require('./config'));
-  hexo.extend.generator.register('is-theme', require('./theme'));
-  hexo.extend.generator.register('is-entries', require('./entries'));
-  hexo.extend.generator.register('is-sitemap', require('./sitemap'));
-  hexo.extend.generator.register('is-manifest', require('./manifest'));
-  hexo.extend.generator.register('is-sw', require('./sw'));
+  hexo.extend.generator.register('inside', function (locals) {
+    const sLocals = {
+      tags: locals.tags.sort('name').map(data => {
+        data.posts = data.posts.filter(published).sort('-date');
+        return data;
+      }).filter(data => data.posts.length),
 
-  function none() {}
+      categories: locals.categories.sort('name').map(data => {
+        data.posts = data.posts.filter(published).sort('-date');
+        return data;
+      }).filter(data => data.posts.length),
+
+      pages: locals.pages
+        // Filter built-in routes to improve compatibility
+        .filter(page => {
+          if (builtInRoutes.includes(page.path.split('/')[0])) {
+            hexo.log.warn(page.path + ' won\'t be rendered.');
+            return false;
+          }
+
+          return true;
+        })
+        .toArray(),
+
+      posts: locals.posts.filter(published).sort('-date').toArray()
+    };
+
+    return flatten(generators.map(fn => fn.call(this, sLocals)));
+  });
 };

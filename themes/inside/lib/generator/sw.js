@@ -1,4 +1,3 @@
-const urlFor = require('hexo/lib/plugins/helper/url_for');
 const trim_slash_regex = /(^\/*|\/*$)/g;
 
 module.exports = function () {
@@ -6,28 +5,26 @@ module.exports = function () {
 
   if (!workbox) return;
 
-  const version = this.theme.config.runtime.buildHash;
+  const version = this.theme.config.runtime.hash;
   const root = ('/' + this.config.root.replace(trim_slash_regex, '')).replace(/^\/$/, '');
-  const rules = {
-    sw: { name: getCacheName('sw'), strategy: 'networkOnly', regex: genRegex(workbox.name) },
-    html: { name: getCacheName('html'), regex: `${root}/.*(:?/[^\\\\.]*/?)$` }
-  };
-  const expire = workbox.expire * 60 * 60;
+  const globalExpire = workbox.expire * 60 * 60;
+  let baseRules = [
+    { name: 'sw', strategy: 'networkOnly', regex: genRegex(workbox.name) },
+    { name: 'html', regex: `${root}/.*(:?/[^\\\\.]*/?)$`, expire: 0 },
+  ], rules = {};
 
-  if (workbox.rules) {
-    workbox.rules.forEach(({ name, strategy, regex }) => {
-      rules[name] = { name: getCacheName(name), strategy, regex };
-    })
-  }
+  baseRules.concat(workbox.rules || []).forEach(({ name, strategy, regex, expire }) => {
+    rules[name] = { name: getCacheName(name), strategy, regex, expire: typeof expire === 'number' ? expire * 60 * 60 : globalExpire };
+  });
 
-  let script = ['self.skipWaiting();', '', `importScripts('${workbox.cdn}');`];
+  let script = [`importScripts('${workbox.cdn}');`];
 
   if (workbox.module_path_prefix)
     script.push(`workbox.setConfig({ modulePathPrefix: '${workbox.module_path_prefix}' });`, '');
 
   // clean up old caches
   script.push(
-    `self.addEventListener('activate', function (event) {`,
+    `self.addEventListener('install', function (event) {`,
     `  event.waitUntil(`,
     `    caches.keys().then(function (names) {`,
     `      var validSets = ${JSON.stringify(Object.values(rules).map(i => i.name))};`,
@@ -38,7 +35,7 @@ module.exports = function () {
     `            indexedDB && indexedDB.deleteDatabase(name);`,
     `            return caches.delete(name);`,
     `          })`,
-    `      );`,
+    `      ).then(function() { self.skipWaiting() });`,
     `    })`,
     `  );`,
     `});`,
@@ -56,8 +53,8 @@ module.exports = function () {
       '}));'
     ];
 
-    if (expire && rule.strategy !== 'networkOnly')
-      routes.splice(2, 0, `  plugins: [ new workbox.expiration.Plugin({ maxAgeSeconds: ${expire} }) ],`);
+    if (rule.expire && rule.strategy !== 'networkOnly')
+      routes.splice(2, 0, `  plugins: [ new workbox.expiration.Plugin({ maxAgeSeconds: ${rule.expire} }) ],`);
 
     script = script.concat(routes);
   };
@@ -65,28 +62,36 @@ module.exports = function () {
   script.push('');
 
   // Special handling for html to avoid multiple redirects
-  if (expire)
-    script.push(`var htmlManager = new workbox.expiration.CacheExpiration('${rules.html.name}', { maxAgeSeconds: ${expire} });`);
-  script.push(
-    `workbox.routing.registerRoute(new RegExp('${rules.html.regex}'), function(context) {`,
-    `  var url = context.url.pathname;`,
-    `  if (!url.endsWith('/')) url += '/';`,
-    `  return caches.match(url)`,
-    `    .then(res => {`,
-    expire ?
-      `      if (res) htmlManager.updateTimestamp(url);` : '',
-    `      return res || fetch(url);`,
-    `    })`,
-    `    .then(res => {`,
-    `       caches.open('${rules.html.name}').then(cache => cache.put(url, res));`,
-    `       return res.clone();`,
-    `     })`,
-    `    .catch(() => fetch(context.event.request));`,
-    `});`
-  );
+  if (rules.html.expire) {
+    script.push(`var htmlManager = new workbox.expiration.CacheExpiration('${rules.html.name}', { maxAgeSeconds: ${rules.html.expire} });`);
+    script.push(
+      `workbox.routing.registerRoute(new RegExp('${rules.html.regex}'), function(context) {`,
+      `  var url = context.url.pathname;`,
+      `  if (!url.endsWith('/')) url += '/';`,
+      `  return caches.match(url)`,
+      `    .then(res => {`,
+      `      if (res) htmlManager.updateTimestamp(url);`,
+      `      return res || fetch(url);`,
+      `    })`,
+      `    .then(res => {`,
+      `       caches.open('${rules.html.name}').then(cache => cache.put(url, res));`,
+      `       return res.clone();`,
+      `     })`,
+      `    .catch(() => fetch(url));`,
+      `});`
+    );
+  } else {
+    script.push(
+      `workbox.routing.registerRoute(new RegExp('${rules.html.regex}'), function(context) {`,
+      `  var url = context.url.pathname;`,
+      `  if (!url.endsWith('/')) url += '/';`,
+      `  return fetch(url);`,
+      `});`
+    );
+  }
 
   return [{
-    path: urlFor.call(this, workbox.name),
+    path: workbox.name,
     data: script.join('\n')
   }];
 

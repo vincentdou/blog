@@ -27,7 +27,13 @@ exports.pick = function (obj, keys) {
     o = Object.assign({}, o);
     let ret = {};
 
-    keys.forEach(key => o.hasOwnProperty(key) && (ret[key] = o[key]));
+    keys.forEach(key => {
+      o.hasOwnProperty(key) &&
+        // delete property with value `false` to save some bytes
+        o[key] !== false &&
+        (ret[key] = o[key]);
+
+    });
 
     if (ret.tags) {
       if (ret.tags.length) ret.tags = ret.tags.sort('name').map(tag => tag.name);
@@ -37,8 +43,8 @@ exports.pick = function (obj, keys) {
       if (ret.categories.length) ret.categories = ret.categories.sort('name').map(cat => cat.name);
       else delete ret.categories;
     }
-    if (ret.prev) ret.prev = { title: ret.prev.title, slug: ret.prev.slug };
-    if (ret.next) ret.next = { title: ret.next.title, slug: ret.next.slug };
+    if (ret.prev) ret.prev = { title: ret.prev.title, link: ret.prev.link };
+    if (ret.next) ret.next = { title: ret.next.title, link: ret.next.link };
 
     return ret;
   }
@@ -53,41 +59,22 @@ exports.base64 = function (str) {
 }
 
 /**
- * Aligns pages path to support sub pages
+ * Align page path to support sub page
  *
  * source/page/index.md => /root/page
  * source/page/v2.md => /root/page/v2
  *
- * @param   {string}  source page.source
+ * @param   {string}  source    page.source
+ * @param   {boolean} keepIndex
  * @returns {string}
  */
-exports.getPagePath = function (source) {
+exports.getPagePath = function (source, keepIndex) {
   let [paths, md] = source.split(/\/(?=[^\/]*md$)/);
 
   if (md !== 'index.md') paths += '/' + md.substring(0, md.indexOf('.md'));
+  else if (keepIndex) paths += '/index';
   return paths;
 }
-
-/**
- * Get file name without hash suffixed
- *
- * @param {string[]} dir
- * @param {string} ext
- * @param {string[]} names
- * @returns {string[]}
- */
-exports.getAssetsName = function (dir, ext, names) {
-  const out = [];
-
-  names.forEach(name => {
-    dir.forEach(filename => {
-      new RegExp(`^${name}\..*\.${ext}$`).test(filename) && out.push(filename);
-    })
-  });
-
-  return out;
-}
-
 
 exports.Pagination = class {
   /**
@@ -152,7 +139,7 @@ exports.Pagination = class {
     const extend = meta.extend || {};
     const id = typeof meta.id === 'function' ?
       meta.id :
-      (index => index === 1 ? meta.id : `${meta.id}/${index}`);
+      (index => (meta.id || '') + (index === 1 ? '' : `/${index}`));
 
     return base.generateFn({
       path: pathFn(id(index)),
@@ -171,14 +158,17 @@ exports.Pagination = class {
  */
 exports.parseToc = function (content, depth) {
   if (!content || !depth) return [];
+  if (depth > 4) depth = 4;
+  if (depth < 1) depth = 3;
 
   const reg = [
-    /^<h1.*id="([^"]*)".*<\/a>(.*)<\/h1>$/,
-    /^<h2.*id="([^"]*)".*<\/a>(.*)<\/h2>$/,
-    /^<h3.*id="([^"]*)".*<\/a>(.*)<\/h3>$/,
-    /^<h4.*id="([^"]*)".*<\/a>(.*)<\/h4>$/,
+    /^<h1.*id="([^"]*)"[^>]*>(.*)<a /,
+    /^<h2.*id="([^"]*)"[^>]*>(.*)<a /,
+    /^<h3.*id="([^"]*)"[^>]*>(.*)<a /,
+    /^<h4.*id="([^"]*)"[^>]*>(.*)<a /,
+    /^<h5.*id="([^"]*)"[^>]*>(.*)<a /,
   ].slice(0, depth + 1),
-    headings = content.match(/<(h[1234]).*>[^<]*<\/\1>/g);
+    headings = content.match(/<(h[12345]).*id="([^"]*)".*>(.*)<a.*<\/\1>/g);
 
   if (!headings) return [];
 
@@ -199,6 +189,9 @@ exports.parseToc = function (content, depth) {
         [, id, title] = b[0].match(reg[pointer]),
         out = { title, id, index },
         children = test(b.slice(1), pointer + 1, index);
+
+      // strip anchor href
+      out.title = out.title.replace(/ href=(['"])[^\1]*\1/g, '')
 
       if (children.length)
         out.children = children;
@@ -244,100 +237,288 @@ exports.parseToc = function (content, depth) {
 
 
 /**
- * Simple json schema validator
+ *  This is a non-standard and partial implementation of json schema draft-07,
+ *  therefore can not be used else where
  *
- * @param {object} schema
- * @param {object} config
- * @param {object} defaults
- * @returns {config}
+ * @param {*} schema
+ * @param {*} data
+ * @param {*} payload
  */
-exports.validateSchema = function (schema, config = {}, defaults = {}) {
-  return validateObject(schema, config);
-
-  function validateObject(schema, config, ordered) {
-    let ret = {};
-    config || (config = {});
-
-    for (const key in schema) {
-      const left = schema[key];
-      const right = config[key];
-      const rightType = exports.type(right);
-
-      // Has properties means `type: object`
-      if (left.properties) ret[key] = validateObject(left.properties, right, left.ordered);
-
-      // Enum can only be primitive values
-      else if (left.enum) {
-        if (left.enum.indexOf(right) !== -1) ret[key] = right;
+exports.parseConfig = function (schema, data, payload = {}) {
+  // https://github.com/epoberezkin/ajv/blob/master/lib/compile/formats.js
+  const regexs = {
+    date: /^\d\d\d\d-[0-1]\d-[0-3]\d$/,
+    // uri: /^(?:[a-z][a-z0-9+-.]*:)(?:\/?\/)?[^\s]*$/i,
+    // 'uri-reference': /^(?:(?:[a-z][a-z0-9+-.]*:)?\/?\/)?(?:[^\\\s#][^\s#]*)?(?:#[^\\\s]*)?$/i,
+    email: /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/i,
+    regex: (str) => {
+      if (/[^\\]\\Z/.test(str)) return false;
+      try {
+        new RegExp(str);
+        return true;
+      } catch (e) {
+        return false;
       }
+    }
+  };
+  const { type, isEmptyObject } = exports;
+  const definitions = {}
+  const parsed = parse(schema, data, '#');
+  return parsed.value !== undefined ? parsed.value : parsed.hint;
 
-      else if (left.oneOf) {
-        // Matches primitive value first
-        if (rightType !== 'object') {
-          if (matchPrimitive(right, left.oneOf)) ret[key] = right;
+  /**
+   *
+   * @param {*} sub   schema
+   * @param {*} subv  value for validation
+   * @param {*} paths used for definitions
+   */
+  function parse(sub, subv, paths) {
+    // merge definitions
+    if (sub.definitions) {
+      for (const defKey in sub.definitions) {
+        definitions[sub.definitions[defKey].$id || paths + '/definitions/' + defKey] = sub.definitions[defKey];
+      }
+    }
+
+    const ret = {
+      hint: payload[sub.default] !== undefined ? payload[sub.default] : sub.default
+    }
+
+    if (sub.$ref) {
+      if (!definitions[sub.$ref]) return ret;
+      // same floor
+      return parse(definitions[sub.$ref], subv, paths);
+    }
+
+    const sType = sub.type;
+    let vType = type(subv);
+
+    // Will be assignd to a new value if subv is not a primitive value
+    let safeSubv = subv;
+
+    // object can hold a `required` key, to ensure the correct hint can be dug,
+    // `subv` must be an object
+    if (sType === 'object' && vType !== 'object') {
+      if (sub.required) {
+        subv = {}
+        vType = sType
+      } else return ret
+    }
+
+    // enum may not hold a type property
+    if (sub.enum) {
+      // enum only accepts primitive values
+      // simply uses `Array.indexOf()`
+      if (!~sub.enum.indexOf(subv)) return ret
+    }
+    else if (sType && sType !== vType) return ret
+    else if (sType === 'string') {
+      // minLength
+      if (sub.minLength !== undefined && subv.length < sub.minLength) return ret
+      // maxLength
+      if (sub.maxLength !== undefined && subv.length > sub.maxLength) return ret
+      // pattern
+      if (sub.pattern && !new RegExp(sub.pattern).test(subv)) return ret
+      // format
+      if (sub.format) {
+        const regex = regexs[sub.format];
+        const passed = regex ? typeof regex === 'function' ? regex(subv) : new RegExp(regex).test(subv) : true;
+        if (!passed) return ret
+      }
+    }
+    else if (sType === 'number') {
+      // minimum
+      if (sub.minimum !== undefined && subv < sub.minimum) return ret
+      // maximum
+      if (sub.maximum !== undefined && subv > sub.maximum) return ret
+    }
+    else if (sType === 'boolean') {
+      // nothing to do
+    }
+    else if (sType === 'object' ||
+      sub.properties !== undefined || // properties implicit object type
+      sub.additionalProperties !== undefined // additionalProperties implicit object type
+    ) {
+      // if (ret.hint === undefined) ret.hint = {}
+
+      const trunk = {}
+      const required = sub.required || []
+      const properties = sub.properties || {}
+      const allKeys = Array.from(new Set(Object.keys(subv || {}).concat(Object.keys(properties))));
+      for (const key of allKeys) {
+        // A specific schema for [key]
+        if (properties[key] !== undefined) {
+          trunk[key] = parse(properties[key], subv[key], paths + '/properties/' + key)
         }
-        // `right` is an object or invalid primitive value
         else {
-          const objectPattern = left.oneOf.find(t => t.type === 'object');
-          if (objectPattern) ret[key] = validateObject(objectPattern.properties, right, objectPattern.ordered);
-        }
-      }
-
-      else if (left.type) {
-        if (left.type === rightType) {
-          if (left.type === 'array') {
-            const t = [];
-            right.forEach(v => {
-              const res = validateObject({ item: left.items }, { item: v });
-              // passed or object type
-              if ('item' in res && !exports.isEmptyObject(res)) {
-                t.push(res.item);
+          if (sub.patternProperties) {
+            for (const pkey in sub.patternProperties) {
+              if (new RegExp(pkey).test(key)) {
+                // Do not put definitions inside a patternProperties
+                trunk[key] = parse(sub.patternProperties[pkey], subv[key], paths + '/properties/' + key)
+                continue;
               }
-            });
+            }
+          }
 
-            if (t.length) ret[key] = t;
-          } else {
-            // primitive value
-            ret[key] = right;
+          if (sub.additionalProperties !== undefined) {
+            // fail
+            if (sub.additionalProperties === false) {
+              // if (strict) return ret
+            } else {
+              trunk[key] = parse(sub.additionalProperties, subv[key], paths + '/additionalProperties/' + key)
+            }
+          }
+          else {
+            trunk[key] = {
+              value: subv[key],
+              pass: true
+            }
           }
         }
-        // type is a schema
-        else if (exports.isObject(left.type)) {
-          let t = validateObject(left.type, right), f = false;
-          // passed only if all required keys are fullfilled
-          for (const key in left.type) {
-            if (left.type[key].required && !(key in t)) f = true;
-          }
-          if (!f) ret[key] = t;
+
+        // propertyNames is missing
+      }
+
+      // properties with valid name can goes here
+      // Note a standard implementation may failed aleady
+
+      // required
+      for (const rkey of required) {
+        if (!trunk[rkey].pass && trunk[rkey].hint === undefined) return ret
+      }
+
+      // combine values
+      safeSubv = {}
+      for (const key in trunk) {
+        if (trunk[key].pass) safeSubv[key] = trunk[key].value
+        // attempt to use default value only if the property is required
+        else if (~required.indexOf(key)) {
+          if (trunk[key].hint !== undefined)
+            safeSubv[key] = trunk[key].hint
+          else return ret;
         }
       }
 
-      // If doesn't has a match, use default if required or right is null
+      // Must after the combination
+      const propLen = Object.keys(safeSubv).length
+      if (sub.minProperties !== undefined && propLen < sub.minProperties) return ret
+      if (sub.maxProperties !== undefined && propLen > sub.maxProperties) {
+        // It's hard to make a hint since object is not a indexed collection
+        return ret
+      }
+
+      // Dependencies
+      if (sub.dependencies) {
+        for (const depKey in sub.dependencies) {
+          const dep = sub.dependencies[depKey]
+          // Schema dependencies
+          if (type(dep) === 'object') {
+            const result = parse(dep, safeSubv, paths + '/dependencies/' + depKey + '/')
+            if (!result.pass) return ret
+          }
+          // Property dependencies
+          else if (safeSubv[depKey] !== undefined) {
+            for (const depTargetKey of dep) {
+              if (safeSubv[depTargetKey] === undefined) return ret
+            }
+          }
+        }
+      }
+
+      // respect empty object
+      if (isEmptyObject(safeSubv) && !isEmptyObject(subv)) safeSubv = undefined
+    }
+    else if (sType === 'array') {
+      // if (ret.hint === undefined) ret.hint = []
+
+      // List validation
+      if (sub.contains) {
+        if (!subv.find(v => parse(sub.contains, v, paths + '/contains').pass)) return ret
+      }
+      else if (sub.items) {
+        let results = [];
+        if (type(sub.items) === 'object') {
+          for (const subvi of subv) {
+            // simply pass items
+            const result = parse(sub.items, subvi, paths + '/items')
+            // Only concat the value
+            if (result.pass) results.push(result.value)
+            // In strict mode, as long as one does not pass, it will fail.
+            // else if (strict) return ret
+          }
+
+          if (!results.length) return ret
+        }
+
+        // Tuple validation
+        else if (type(sub.items) === 'array') {
+          for (let i = 0; i < sub.items.length; i++) {
+            const result = parse(sub.items[i], subv[i], paths + '/items[' + i + ']')
+            if (!result.pass) return ret
+            results.push(result.value)
+          }
+
+          // Note results does not contain additional items, if any
+
+          if (sub.additionalItems !== false) {
+            const additionalV = subv.slice(sub.items.length)
+            // by default, it’s okay to add additional items to end
+            if (sub.additionalItems === undefined) {
+              // concat additional value to results
+              results = results.concat(additionalV)
+            }
+            // additionalItems is a schema
+            else {
+              const result = parse({ type: 'array', items: sub.additionalItems }, additionalV, paths + '/additionalItems')
+              if (!result.pass) return ret
+              else {
+                // concat additional value to results
+                results = results.concat(result.value)
+              }
+            }
+          }
+          // `additionalItems: false` has the effect of disallowing extra items in the array.
+          else {
+            if (sub.items.length !== subv.length) return ret
+          }
+        }
+
+        safeSubv = results
+      }
+
+      // below uses `safeSubv` instead of subv
+
+      if (sub.minItems !== undefined && safeSubv.length < sub.minItems) return ret
+      if (sub.maxItems !== undefined && safeSubv.length > sub.maxItems) return ret
+      if (sub.uniqueItems !== undefined && safeSubv.length !== new Set(safeSubv.map(JSON.stringify)).size) return ret
+    }
+    else if (sub.oneOf || sub.anyOf || sub.allOf) {
+      const word = sub.oneOf ? 'oneOf' : sub.anyOf ? 'anyOf' : 'allOf';
+      let n = 0;
+      for (let i = 0; i < sub[word].length; i++) {
+        const result = parse(sub[word][i], subv, paths + '/' + word + '[' + i + ']')
+        if (result.pass) {
+          n++;
+
+          // treat oneOf as anyOf, just return the first valid value
+          if (word === 'oneOf' || word === 'anyOf') {
+            safeSubv = result.value;
+            break;
+          }
+        }
+      }
+
       if (
-        left.hasOwnProperty('default') && !ret.hasOwnProperty(key)
-        && (left.required || right === null)
-      ) {
-        ret[key] = exports.type(left.default) === 'string' && left.default.startsWith('$') && defaults.hasOwnProperty(left.default) ? defaults[left.default] : left.default;
-      }
+        !n ||
+        (sub.oneOf && n > 1) ||
+        (sub.allOf && n !== sub.allOf.length)
+      ) return ret
     }
 
-    // restore order
-    if (ordered) {
-      const t = {};
-      for (const key in config) {
-        if (key in ret) t[key] = undefined;
-      }
-      ret = Object.assign(t, ret);
-    }
-
-    return ret;
-  }
-
-  function matchPrimitive(value, oneOf) {
-    return !!oneOf.find(item => {
-      if (item.enum) return item.enum.indexOf(value) !== -1
-      else return item.type === exports.type(value);
-    })
+    ret.value = safeSubv;
+    if (safeSubv !== undefined) ret.pass = true;
+    return ret
   }
 }
 
@@ -354,14 +535,48 @@ const localeMap = {
   'zh-cn': 'zh-Hans',
   'zh-hk': 'zh-Hant',
   'zh-tw': 'zh-Hant',
+  'en': 'en',
+  'ja': 'ja',
 };
 const oldLocaleMap = {
   'zh-Hans': 'zh-cn',
-  'zh-Hant': 'zh-hk'
+  'zh-Hant': 'zh-hk',
+  'en': 'en',
+  'ja': 'ja',
 };
-exports.localeId = function (id, toNew) {
-  return (toNew ? localeMap : oldLocaleMap)[id] || id;
+
+/**
+ * Convert language code to ISO 639-1
+ *
+ * @param {string | string[]} ids
+ * @param {boolean} toOld reverse
+ * @returns {string}
+ */
+exports.localeId = function (ids, toOld) {
+  const id = ids ? typeof ids === 'string' ? ids : ids[0] : '';
+  const lowerCasedId = id ? id.toLowerCase() : '';
+
+  if (toOld)
+    return localeMap[lowerCasedId] !== undefined ? id : oldLocaleMap[id] || oldLocaleMap.en;
+
+  return oldLocaleMap[id] !== undefined ? id : localeMap[lowerCasedId] || localeMap.en;
 }
+
+/**
+ * Transform with babel, and minify with uglify
+ *
+ * @param {string} code
+ * @returns {string}
+ */
+exports.parseJs = jsParser();
+
+/**
+ * Minify HTML and CSS with html-minifier
+ *
+ * @param {string} code
+ * @returns {string}
+ */
+exports.minifyHtml = htmlMinifier();
 
 function jsParser() {
   let babel, uglify;
@@ -371,11 +586,11 @@ function jsParser() {
     require('babel-preset-env');
   } catch (e) { return i => i || '' }
 
-  const esSafe = code => babel.transform(code, { presets: ['env'] });
+  const esSafe = code => babel.transform(code, { presets: [['env', { 'modules': false }]] });
   const minify = uglify.minify;
 
   return function (code) {
-    if (!code) return '';
+    if (!code || typeof code !== 'string') return '';
 
     code = esSafe(code);
     if (code) code = code.code;
@@ -388,4 +603,108 @@ function jsParser() {
     return code;
   }
 }
-exports.parseJs = jsParser();
+
+function htmlMinifier() {
+  let htmlMinifier;
+  try {
+    htmlMinifier = require('html-minifier').minify;
+  } catch (e) { return i => i || '' }
+
+  const options = {
+    minifyCSS: true,
+    collapseWhitespace: true,
+    removeEmptyAttributes: true,
+    removeComments: true
+  };
+
+  return function (code) {
+    if (!code || typeof code !== 'string') return '';
+
+    return htmlMinifier(code, options);
+  }
+}
+
+/**
+ * Wrap minified code with template
+ *
+ * Example:
+ *
+ * snippet('') => ''
+ *
+ * snippet('code')
+ *   => `<div class="is-snippet"><script>code which parsed by parseJs()</script></div>`
+ *
+ * snippet('', '<script id="mycode">code</script>')
+ *   => `<div class="is-snippet"><script id="mycode">code</script></div>`
+ *
+ * snippet('code', code => `<script id="mycode">${code}</script>`)
+ *   => `<div class="is-snippet"><script id="mycode">code which parsed by parseJs()</script></div>`
+ *
+ * @param {string} code
+ * @param {(string | ((code: string) => string))} template
+ * @returns {string}
+ */
+exports.snippet = function (code, template = code => `<script>${code}</script>`) {
+  let content = '';
+
+  // ignore code if template is string
+  if (typeof template === 'string') {
+    content = template;
+  }
+
+  // template is function which relay on code
+  else if (code) {
+    content = template(exports.parseJs(`(function(){${code}})();`));
+  }
+
+  return content ? `<div class="is-snippet">${content}</div>` : '';
+}
+
+/**
+ * Make sure not to process unpublished articles
+ *
+ * @param {Post | Page} p
+ * @returns {boolean}
+ */
+exports.published = function (p) {
+  return Boolean(~['post', 'page'].indexOf(p.layout));
+}
+
+/**
+ * Render tag object to string
+ *
+ * @param {VTag} vTag
+ * @returns {string}
+ */
+exports.tag = function (vTag) {
+  let { tag, code, ...attrs } = vTag;
+
+  if (tag === 'link') {
+    if (!attrs.href) return '';
+    if (!attrs.rel) attrs.rel = 'stylesheet';
+  }
+  else if (tag === 'style') {
+    if (!code) return '';
+  }
+  else if (tag === 'script') {
+    if (attrs.src) code = '';
+    else if (code) {
+      if (attrs.type === undefined) {
+        code = exports.parseJs(`(function(){${code}})();`);
+        if (!code) return '';
+      }
+    }
+    else return '';
+  }
+
+  let attrString = '';
+  for (let k in attrs) {
+    const v = attrs[k]
+    if (v === true) attrString += ' ' + k;
+    else attrString += ` ${k}="${v}"`;
+  }
+
+  if (tag === 'link') return `<link${attrString}>`;
+
+  return exports.minifyHtml(`<${tag + attrString}>${code || ''}</${tag}>`);
+}

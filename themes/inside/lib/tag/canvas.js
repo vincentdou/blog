@@ -1,5 +1,4 @@
-const { parseJs } = require('../utils');
-const snippet = require('./snippet');
+const { snippet } = require('../utils');
 let currentTitle = ''; id = 0;
 
 /**
@@ -17,7 +16,7 @@ module.exports = function (args, content) {
     currentTitle = this.title;
   }
 
-  const [width, height] = args;
+  let [width, height] = args;
   const cid = `canvas-${id}`;
 
 
@@ -26,14 +25,8 @@ module.exports = function (args, content) {
 
   id++;
 
-  let code = parseJs(
-    `(function(canvas) {
-       'use strict';
-       var ctx=canvas.getContext('2d'), w = ${width}, h = ${height};
-       ${content}
-     })(document.getElementById('${cid}'));`
-  );
-
-  if (!code) return '';
-  return snippet([], `<canvas id="${cid}" width="${width}" height="${height}"></canvas><script>${code}</script>`);
+  return snippet(
+    `var canvas = document.getElementById('${cid}'), ctx = canvas.getContext('2d'), w = ${width}, h = ${height}; ${content}`,
+    code => `<p><canvas id="${cid}" width="${width}" height="${height}"></canvas></p><script>${code}</script>`
+  )
 }

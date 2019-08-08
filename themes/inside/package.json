@@ -1,11 +1,13 @@
 {
   "name": "hexo-theme-inside",
-  "version": "1.10.4",
-  "description": "A flat and clean theme for Hexo.",
-  "main": "scripts/index.js",
+  "version": "2.3.0",
+  "description": "❤️ SPA, flat and clean theme for Hexo.",
+  "scripts": {
+    "test": "jasmine --config=test/jasmine.json"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/elmorec/hexo-theme-inside.git"
+    "url": "git+https://github.com/ikeq/hexo-theme-inside.git"
   },
   "keywords": [
     "hexo",
@@ -18,7 +20,14 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/elmorec/hexo-theme-inside/issues"
+    "url": "https://github.com/ikeq/hexo-theme-inside/issues"
   },
-  "homepage": "https://github.com/elmorec/hexo-theme-inside#readme"
+  "homepage": "https://github.com/ikeq/hexo-theme-inside#readme",
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0",
+    "hexo": "^3.9.0",
+    "jasmine": "^3.4.0",
+    "uglify-js": "^3.6.0"
+  }
 }

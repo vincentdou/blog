@@ -1,12 +1,9 @@
-const { getPagePath } = require('../utils');
-
 module.exports = function (locals) {
-  const url = this.config.url;
-  const urlFn = o => `<url><loc>${o.permalink}</loc><lastmod>${o.updated.toJSON()}</lastmod></url>`,
+  const urlFn = ({ plink, updated }) => `<url><loc>${plink}</loc><lastmod>${updated.toJSON()}</lastmod></url>`,
     urlset = [
-      ...locals.pages.sort('-date').map(p => urlFn({ permalink: `${url}/${getPagePath(p.source)}/index.html`, updated: p.updated })),
-      ...locals.posts.sort('-date').filter(post => post.published).map(urlFn)
-    ].join('');
+      ...locals.posts,
+      ...locals.pages
+    ].map(urlFn).join('');
 
   return [{
     path: 'sitemap.xml',
