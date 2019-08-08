@@ -369,7 +369,7 @@ pwa:
   #       regex: your_data_prefix/.*\\.json
 
   # manifest.json
-  # manifest:
+  manifest:
     short_name:
     name:
     start_url: /blog
