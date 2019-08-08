@@ -93,12 +93,12 @@ appearance:
 profile:
   # `email` is used for gravatar(https://en.gravatar.com),
   # fallback to `hexo.config.email` if not specified
-  email:
+  email: w962961915@gmail.com
 
   # You can set Avatar URL directly
-  # avatar:
+  # avatar: avatar.jpg
 
-  bio: Awesome guy.
+  bio: 人生的意义，在于承担人生无意义的勇气。
 
 # Sidebar navigation links
 menu:
@@ -115,7 +115,7 @@ sns:
   # If you use hexo-generator-feed, `sns.feed` can be left blank
   # and the theme will try to get `hexo.config.feed.path`.
   feed:
-  github:
+  github: https://github.com/vincentdou
   twitter:
   facebook:
   instagram:
@@ -370,18 +370,18 @@ pwa:
 
   # manifest.json
   # manifest:
-  #   short_name:
-  #   name:
-  #   start_url: /
-  #   theme_color: '#2a2b33'
-  #   background_color: '#2a2b33'
-  #   icons:
-  #     - src: icon-194x194.png
-  #       sizes: 194x194 512x512
-  #       type: image/png
-  #     - src: icon-144x144.png
-  #       sizes: 144x144
-  #       type: image/png
+    short_name:
+    name:
+    start_url: /blog
+    theme_color: '#2a2b33'
+    background_color: '#2a2b33'
+    icons:
+      - src: icon-194x194.png
+        sizes: 194x194 512x512
+        type: image/png
+      - src: icon-144x144.png
+        sizes: 144x144
+        type: image/png
 
 # Plugins
 # Inject html snippet to a specified position, Or global inject scripts/styles.
