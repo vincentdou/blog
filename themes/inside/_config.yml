@@ -56,7 +56,6 @@ appearance:
   # Uses an architecture called "base16" (https://github.com/chriskempson/base16),
   # the default theme is a customized Atelier Dune Light theme,
   # please feel free to explore more.
-  highlight:
 
   # Default Light by Chris Kempson (http://chriskempson.com)
   # highlight: [
@@ -81,6 +80,14 @@ appearance:
   #   '#cc6666', '#de935f', '#f0c674', '#b5bd68',
   #   '#8abeb7', '#81a2be', '#b294bb', '#a3685a'
   # ]
+
+  # dracula
+  highlight: [
+    '#282936', '#3a3c4e', '#4d4f68', '#626483',
+    '#62d6e8', '#e9e9f4', '#f1f2f8', '#f7f7fb',
+    '#ea51b2', '#b45bcf', '#00f769', '#ebff87',
+    '#a1efe4', '#62d6e8', '#b45bcf', '#00f769'
+  ]
 
   # Mode
   # Specify `dark` to apply a built-in dark mode,
