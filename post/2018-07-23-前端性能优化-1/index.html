@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<title>前端性能优化-1 - Vincent Blog</title>
+<base href="/blog/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<link rel="canonical" href="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-1/">
+<link rel="icon" type="image/x-icon" href="/blog/favicon.ico">
+<link rel="manifest" href="/blog/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="DOM 操作篇缓存DOM对象很基本的一个做法，在 for 循环前把要操作的 DOM 节点先获取到，而不是每次遍历都重新获取。 在内存中操作元素利用document.createDocumentFragment()可以创建内存节点。 由于 DOM 操作会导致浏览器的回流，回流需要花费大量的时间进行样式计算和节点重绘与渲染，所以应当尽量减少回流次数。一种可靠的方法就是加入元素时不要修改页面上已经存在的">
+<meta name="keywords" content="前端开发,性能优化">
+<meta property="og:type" content="website">
+<meta property="og:title" content="前端性能优化-1">
+<meta property="og:url" content="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-1/index.html">
+<meta property="og:site_name" content="Vincent Blog">
+<meta property="og:description" content="DOM 操作篇缓存DOM对象很基本的一个做法，在 for 循环前把要操作的 DOM 节点先获取到，而不是每次遍历都重新获取。 在内存中操作元素利用document.createDocumentFragment()可以创建内存节点。 由于 DOM 操作会导致浏览器的回流，回流需要花费大量的时间进行样式计算和节点重绘与渲染，所以应当尽量减少回流次数。一种可靠的方法就是加入元素时不要修改页面上已经存在的">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-1/avatar.jpg">
+<meta property="og:updated_time" content="2019-01-02T08:49:00.221Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="前端性能优化-1">
+<meta name="twitter:description" content="DOM 操作篇缓存DOM对象很基本的一个做法，在 for 循环前把要操作的 DOM 节点先获取到，而不是每次遍历都重新获取。 在内存中操作元素利用document.createDocumentFragment()可以创建内存节点。 由于 DOM 操作会导致浏览器的回流，回流需要花费大量的时间进行样式计算和节点重绘与渲染，所以应当尽量减少回流次数。一种可靠的方法就是加入元素时不要修改页面上已经存在的">
+<meta name="twitter:image" content="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-1/avatar.jpg">
+<link href="//fonts.googleapis.com/css?family=Baloo+Bhaijaan|Inconsolata|Josefin+Sans|Montserrat" rel="stylesheet">
+<link href="/blog/styles.27f292de72d9e7a2cdaf.css" rel="stylesheet">
+<link rel="stylesheet" href="/blog/theme.5b328618ffa2dc24bbbb.css">
+<script src="/blog/config.f21209d936befd619a57.js"></script>
+</head>
+<body lang="zh-Hans">
+<is-d2a57d></is-d2a57d>
+<script src="/blog/runtime.9c308a63d02029c20228.js"></script>
+<script src="/blog/polyfills-es5.613d1909ec381c0aefb7.js"></script>
+<script src="/blog/polyfills.23aa31104b29f3163090.js"></script>
+<script src="/blog/main.e8fb83af303ddf146491.zh-Hans.js"></script>
+</body>
+</html>

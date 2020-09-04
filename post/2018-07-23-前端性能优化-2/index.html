@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<title>前端性能优化-2 - Vincent Blog</title>
+<base href="/blog/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<link rel="canonical" href="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-2/">
+<link rel="icon" type="image/x-icon" href="/blog/favicon.ico">
+<link rel="manifest" href="/blog/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="动画篇层？重绘？回流和重布局？图层重组？首先要了解CSS的图层的概念（Chrome浏览器） 浏览器在渲染一个页面时，会将页面分为很多个图层，图层有大有小，每个图层上有一个或多个节点。在渲染DOM的时候，浏览器所做的工作实际上是：  获取DOM后分割为多个图层 对每个图层的节点计算样式结果（Recalculate style–样式重计算） 为每个节点生成图形和位置（Layout–回流和重布局） 将每">
+<meta name="keywords" content="前端开发,性能优化">
+<meta property="og:type" content="website">
+<meta property="og:title" content="前端性能优化-2">
+<meta property="og:url" content="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-2/index.html">
+<meta property="og:site_name" content="Vincent Blog">
+<meta property="og:description" content="动画篇层？重绘？回流和重布局？图层重组？首先要了解CSS的图层的概念（Chrome浏览器） 浏览器在渲染一个页面时，会将页面分为很多个图层，图层有大有小，每个图层上有一个或多个节点。在渲染DOM的时候，浏览器所做的工作实际上是：  获取DOM后分割为多个图层 对每个图层的节点计算样式结果（Recalculate style–样式重计算） 为每个节点生成图形和位置（Layout–回流和重布局） 将每">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-2/avatar.jpg">
+<meta property="og:updated_time" content="2019-01-02T08:49:00.266Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="前端性能优化-2">
+<meta name="twitter:description" content="动画篇层？重绘？回流和重布局？图层重组？首先要了解CSS的图层的概念（Chrome浏览器） 浏览器在渲染一个页面时，会将页面分为很多个图层，图层有大有小，每个图层上有一个或多个节点。在渲染DOM的时候，浏览器所做的工作实际上是：  获取DOM后分割为多个图层 对每个图层的节点计算样式结果（Recalculate style–样式重计算） 为每个节点生成图形和位置（Layout–回流和重布局） 将每">
+<meta name="twitter:image" content="https://vincentdou.github.io/blog/post/2018-07-23-前端性能优化-2/avatar.jpg">
+<link href="//fonts.googleapis.com/css?family=Baloo+Bhaijaan|Inconsolata|Josefin+Sans|Montserrat" rel="stylesheet">
+<link href="/blog/styles.27f292de72d9e7a2cdaf.css" rel="stylesheet">
+<link rel="stylesheet" href="/blog/theme.5b328618ffa2dc24bbbb.css">
+<script src="/blog/config.f21209d936befd619a57.js"></script>
+</head>
+<body lang="zh-Hans">
+<is-d2a57d></is-d2a57d>
+<script src="/blog/runtime.9c308a63d02029c20228.js"></script>
+<script src="/blog/polyfills-es5.613d1909ec381c0aefb7.js"></script>
+<script src="/blog/polyfills.23aa31104b29f3163090.js"></script>
+<script src="/blog/main.e8fb83af303ddf146491.zh-Hans.js"></script>
+</body>
+</html>
